@@ -1,0 +1,6 @@
+{% extends "admin/change_form.html" %}
+
+{% block breadcrumb %}
+  {{ block.super }}
+  <a href="{% url 'myapp:custom_action' obj.id %}" class="button">Custom Action</a>
+{% endblock %}
