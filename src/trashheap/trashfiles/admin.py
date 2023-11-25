@@ -5,29 +5,38 @@ from django.contrib.admin.views.main import ChangeList
 from .models import TrashFile
 
 # Override the base admin template
-class CustomAdminSite(admin.AdminSite):
-    site_header = 'My Custom Admin Site'
+@admin.register(TrashFile)
+class trashfile_admin(admin.ModelAdmin):
+    list_display = ('name', 'file', 'file_link', 'file_size', 'file_type', 'file_created', 'file_modified')
+    list_filter = ('file_type', 'file_created', 'file_modified')
+    search_fields = ('name', 'file')
+    readonly_fields = ('file_link', 'file_size', 'file_type', 'file_created', 'file_modified')
+    ordering = ('-file_created',)
 
-    def each_context(self, request):
-        context = super().each_context(request)
-        context['my_custom_var'] = 'Hello, world!'
-        return context
+    def file_link(self, obj):
+        return format_html('<a href="{}">{}</a>', reverse('trashfiles:trashfile_detail', args=[obj.id]), obj.file.name)
 
-admin_site = CustomAdminSite(name='customadmin')
+    def file_size(self, obj):
+        return obj.file.size
 
-class TrashFileAdmin(admin.ModelAdmin):
-    readonly_fields = ('id', 'created_at', 'updated_at')
+    def file_type(self, obj):
+        return obj.file.content_type
 
-    #set the plural name for this model
+    def file_created(self, obj):
+        return obj.file.created
+
+    def file_modified(self, obj):
+        return obj.file.modified
+
+    file_link.short_description = 'File'
+    file_size.short_description = 'Size'
+    file_type.short_description = 'Type'
+    file_created.short_description = 'Created'
+    file_modified.short_description = 'Modified'
+
+    # Override the queryset to only show files that are not deleted
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(deleted=False)
+
     
-
-    def view_on_site(self, obj):
-        url = reverse('myapp:view_file', args=[obj.id])
-        return format_html('<a href="{}">View on site</a>', url)
-    
-    def has_add_permission(self, request):
-        return False
-
-    change_form_template = 'admin/trashfile_change_form.html'
-
-admin.site.register(TrashFile, TrashFileAdmin)
